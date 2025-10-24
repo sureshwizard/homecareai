@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"/><title>HomeCareAI Video Analyzer</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;margin:20px}
+.card{border:1px solid #ddd;padding:12px;border-radius:8px;margin-bottom:12px}
+button{padding:8px 12px;margin-top:6px}
+img{max-width:480px;border:1px solid #ccc;padding:4px}
+pre{background:#f7f7f7;padding:10px;border-radius:6px;overflow:auto}
+</style>
+</head>
+<body>
+  <h2>HomeCareAI — Upload & Analyze Videos</h2>
+
+  <div class="card">
+    <h3>1) Upload video</h3>
+    <input id="file" type="file" accept="video/*"/>
+    <button onclick="upload()">Upload</button>
+    <div id="uploadRes"></div>
+  </div>
+
+  <div class="card">
+    <h3>2) Analyze uploaded video</h3>
+    <input id="vid" placeholder="paste video_id from upload response"/>
+    <button onclick="analyze()">Analyze</button>
+    <div id="anRes"></div>
+  </div>
+
+  <div class="card">
+    <h3>3) Recent events</h3>
+    <button onclick="listEvents()">Refresh events</button>
+    <div id="events"></div>
+  </div>
+
+<script>
+async function upload(){
+  const f = document.getElementById('file').files[0];
+  if(!f){ alert("choose a video"); return; }
+  const fd = new FormData();
+  fd.append('file', f);
+  document.getElementById('uploadRes').innerText = 'Uploading...';
+  const r = await fetch('/upload-video', {method:'POST', body: fd});
+  const j = await r.json();
+  document.getElementById('uploadRes').innerText = JSON.stringify(j, null, 2);
+  document.getElementById('vid').value = j.video_id;
+}
+
+async function analyze(){
+  const vid = document.getElementById('vid').value.trim();
+  if(!vid){ alert('paste video id'); return; }
+  document.getElementById('anRes').innerText = 'Analyzing... This may take a few seconds';
+  const r = await fetch(`/analyze/${vid}`, {method:'POST'});
+  const j = await r.json();
+  const d = document.getElementById('anRes');
+  d.innerHTML = '';
+  d.appendChild(document.createElement('pre')).innerText = JSON.stringify(j, null, 2);
+  if(j.representative_frame){
+    const img = document.createElement('img');
+    img.src = j.representative_frame;
+    d.appendChild(img);
+  }
+  if(j.notifications && j.notifications.length){
+    const h = document.createElement('div');
+    h.innerHTML = '<h4>Notifications:</h4>';
+    j.notifications.forEach(n => h.appendChild(document.createElement('pre')).innerText = JSON.stringify(n));
+    d.appendChild(h);
+  }
+  listEvents();
+}
+
+async function listEvents(){
+  const r = await fetch('/events');
+  const j = await r.json();
+  const out = document.getElementById('events');
+  out.innerHTML = '<pre>' + JSON.stringify(j, null, 2) + '</pre>';
+}
+</script>
+</body>
+</html>

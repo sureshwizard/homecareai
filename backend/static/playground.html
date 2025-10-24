@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HomeCareAI — Smart Home Event Analyzer</title>
+  <style>
+    :root{
+      --bg:#f5f7fb; --card:#ffffff; --accent:#0078D7; --muted:#6b7280;
+    }
+    *{box-sizing:border-box}
+    body{font-family:Inter, "Segoe UI", Roboto, Arial; background:var(--bg); margin:0; color:#0f172a}
+    header{background:linear-gradient(90deg,#0ea5e9,#0369a1); color:white; padding:18px 20px; text-align:center; font-weight:700}
+    .wrap{max-width:1100px; margin:26px auto; padding:0 18px}
+    .grid{display:grid; grid-template-columns: 1fr 380px; gap:18px}
+    .card{background:var(--card); border-radius:12px; padding:16px; box-shadow:0 6px 18px rgba(12,18,36,0.06)}
+    h1{margin:0 0 6px 0; font-size:20px}
+    h2{color:var(--accent); margin:0 0 12px 0; font-size:16px}
+    label{display:block; margin-top:10px; color:var(--muted); font-size:13px}
+    input[type="file"]{margin-top:8px}
+    select,input[type="text"]{width:100%; padding:8px; border-radius:8px; border:1px solid #e6edf3}
+    button{background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; margin-left:6px}
+    .muted{color:var(--muted); font-size:13px}
+    pre{background:#0f172a10; padding:10px; border-radius:8px; overflow:auto; font-size:13px}
+    img,video{max-width:100%; border-radius:8px; display:block; margin-top:8px}
+    .notifications{display:flex; flex-direction:column; gap:10px}
+    .note{display:flex; gap:12px; align-items:flex-start; padding:12px; border-radius:10px; border-left:6px solid #ddd; background:#fff}
+    .note.fire{border-left-color:#ef4444}
+    .note.fall{border-left-color:#8b5cf6}
+    .note.visitor{border-left-color:#f59e0b}
+    .note.motion{border-left-color:#06b6d4}
+    .note.info{border-left-color:#94a3b8}
+    .note img{width:110px; height:70px; object-fit:cover; border-radius:8px}
+    .note .meta{flex:1}
+    .note .meta h4{margin:0 0 6px 0}
+    .note .meta p{margin:0; font-size:13px; color:#111827}
+    .note .meta .small{color:var(--muted); font-size:12px; margin-top:6px}
+    .note .actions{display:flex; flex-direction:column; gap:8px}
+    .chip{display:inline-flex; align-items:center; gap:8px; padding:6px 8px; background:#f1f5f9; border-radius:999px; font-size:13px}
+    .top-actions{display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap}
+    @media(max-width:980px){ .grid{grid-template-columns:1fr; } .note img{display:none} }
+  </style>
+</head>
+<body>
+  <header>🏡 HomeCareAI — Smart Home Event Analyzer</header>
+
+  <div class="wrap">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px">
+      <div>
+        <h1>Demo Dashboard</h1>
+        <div class="muted">Upload, analyze, and review smart-home events. Quick demo assets included.</div>
+      </div>
+      <div class="chip">Project demo • Serverless-ready</div>
+    </div>
+
+    <div class="grid">
+      <!-- left column -->
+      <div>
+        <div class="card">
+          <h2>🎬 Demo Scenarios</h2>
+          <label for="demoSelect">Choose a bundled demo asset</label>
+          <select id="demoSelect">
+            <option value="">— select —</option>
+            <option value="stranger.png">🚪 stranger.png (image)</option>
+            <option value="stranger.mp4">🚶 stranger.mp4 (video)</option>
+            <option value="fire-kitchen.mp4">🔥 fire-kitchen.mp4</option>
+            <option value="fire-at-kitchen.png">🔥 fire-at-kitchen.png</option>
+            <option value="falldetected1.png">🤕 falldetected1.png</option>
+            <option value="falldetected.png">🤕 falldetected.png</option>
+            <option value="elderly-women-fallen.mp4">🧓 elderly-women-fallen.mp4</option>
+            <option value="chaotic-motion-1.png">💨 chaotic-motion-1.png</option>
+            <option value="chaotic-motion-2.png">💨 chaotic-motion-2.png</option>
+            <option value="celebration.mp4">🎉 celebration.mp4</option>
+            <option value="front_door.jpg">🚪 front_door.jpg</option>
+            <option value="garage.jpg">🚗 garage.jpg</option>
+            <option value="kitchen.jpg">🍳 kitchen.jpg</option>
+            <option value="living_room.jpg">🛋️ living_room.jpg</option>
+          </select>
+
+          <div class="top-actions" style="margin-top:10px">
+            <button onclick="loadDemo()">Preview</button>
+            <button onclick="analyzeDemo()">Analyze Demo</button>
+            <button onclick="refreshEvents()">Refresh Events</button>
+            <div style="flex:1"></div>
+            <div class="muted">API: <span id="apiBase" style="font-weight:600">http://localhost:8000</span></div>
+          </div>
+
+          <div id="demoPreview" style="margin-top:12px"></div>
+          <pre id="demoResult" style="height:120px"></pre>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h2>📤 Upload & Analyze</h2>
+          <label>Choose local video/image</label>
+          <input type="file" id="fileInput" accept="video/*,image/*" />
+          <div style="margin-top:10px">
+            <button onclick="uploadLocal()">Upload</button>
+            <span class="muted" style="margin-left:8px">After upload, paste the video id and click Analyze</span>
+          </div>
+
+          <label style="margin-top:12px">Video ID</label>
+          <input type="text" id="vidId" placeholder="video id (from upload)" />
+          <div style="margin-top:8px">
+            <button onclick="analyzeById()">Analyze</button>
+            <button onclick="autoAnalyze()">Upload & Analyze (one-step)</button>
+          </div>
+
+          <pre id="uploadResult" style="margin-top:12px; height:120px"></pre>
+        </div>
+
+      </div>
+
+      <!-- right column -->
+      <div>
+        <div class="card">
+          <h2>🧾 Notification Summary</h2>
+          <div class="muted" style="margin-bottom:8px">Recent detected events — color-coded and actionable.</div>
+          <div id="notifications" class="notifications" style="max-height:560px; overflow:auto"></div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h2>🔍 Raw Events</h2>
+          <div class="muted">JSON event store (useful for judges / debugging)</div>
+          <pre id="eventsRaw" style="height:260px; margin-top:10px; overflow:auto">No events yet.</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // Set API base here (change to your Cloud Run URL when deployed)
+  const API_BASE = "http://localhost:8000";
+  document.getElementById('apiBase').innerText = API_BASE;
+
+  // Helpers
+  function el(tag, attrs = {}, children = []) {
+    const e = document.createElement(tag);
+    for (const k in attrs) {
+      if (k === 'class') e.className = attrs[k];
+      else if (k === 'html') e.innerHTML = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    }
+    (Array.isArray(children) ? children : [children]).forEach(c => {
+      if (!c) return;
+      if (typeof c === 'string') e.appendChild(document.createTextNode(c));
+      else e.appendChild(c);
+    });
+    return e;
+  }
+
+  // Load demo preview (static assets under /static/assets/)
+  function loadDemo(){
+    const sel = document.getElementById('demoSelect').value;
+    if (!sel) { alert('Choose an asset'); return; }
+    const preview = document.getElementById('demoPreview');
+    preview.innerHTML = '';
+    const ext = sel.split('.').pop().toLowerCase();
+    const url = `${API_BASE}/static/assets/${sel}`;
+    if (['mp4','mov','avi'].includes(ext)) {
+      const v = el('video', {controls:true, src:url});
+      preview.appendChild(v);
+    } else if (['jpg','jpeg','png'].includes(ext)) {
+      const i = el('img', {src:url});
+      preview.appendChild(i);
+    } else {
+      preview.innerText = 'Unsupported format';
+    }
+    document.getElementById('demoResult').textContent = 'Preview loaded: ' + sel;
+  }
+
+  // Analyze demo by fetching the static asset, uploading, then analyzing
+  async function analyzeDemo(){
+    const sel = document.getElementById('demoSelect').value;
+    if (!sel) { alert('Choose an asset'); return; }
+    setDemoResult('Preparing demo upload...');
+    try {
+      const resp = await fetch(`${API_BASE}/static/assets/${sel}`);
+      if (!resp.ok) throw new Error('Failed to fetch demo asset: ' + resp.status);
+      const blob = await resp.blob();
+      const fd = new FormData();
+      fd.append('file', new File([blob], sel));
+      setDemoResult('Uploading demo asset...');
+      const up = await fetch(`${API_BASE}/upload-video`, { method: 'POST', body: fd });
+      const j = await up.json();
+      setDemoResult('Uploaded. Video ID: ' + j.video_id + ' — analyzing...');
+      const an = await fetch(`${API_BASE}/analyze/${j.video_id}`, { method: 'POST' });
+      const res = await an.json();
+      setDemoResult(JSON.stringify(res, null, 2));
+      await refreshEvents();
+    } catch (err) {
+      setDemoResult('Error: ' + err.message);
+    }
+  }
+
+  function setDemoResult(txt) { document.getElementById('demoResult').textContent = txt; }
+
+  // Upload local file (returns server json response)
+  async function uploadLocal(){
+    const f = document.getElementById('fileInput').files[0];
+    if (!f) { alert('Pick a file'); return; }
+    const fd = new FormData(); fd.append('file', f);
+    document.getElementById('uploadResult').textContent = 'Uploading...';
+    try {
+      const r = await fetch(`${API_BASE}/upload-video`, { method:'POST', body: fd });
+      const j = await r.json();
+      document.getElementById('uploadResult').textContent = JSON.stringify(j, null, 2);
+      document.getElementById('vidId').value = j.video_id;
+      return j;
+    } catch (e) {
+      document.getElementById('uploadResult').textContent = 'Upload error: ' + e.message;
+      throw e;
+    }
+  }
+
+  // Upload & analyze in one step
+  async function autoAnalyze(){
+    try {
+      const up = await uploadLocal();
+      const an = await fetch(`${API_BASE}/analyze/${up.video_id}`, { method:'POST' });
+      const res = await an.json();
+      document.getElementById('uploadResult').textContent = JSON.stringify(res, null, 2);
+      await refreshEvents();
+    } catch (e) { /* handled in uploadLocal */ }
+  }
+
+  // Analyze by ID entered
+  async function analyzeById(){
+    const id = document.getElementById('vidId').value.trim();
+    if (!id) { alert('Enter video id'); return; }
+    document.getElementById('uploadResult').textContent = 'Analyzing...';
+    try {
+      const an = await fetch(`${API_BASE}/analyze/${id}`, { method:'POST' });
+      const res = await an.json();
+      document.getElementById('uploadResult').textContent = JSON.stringify(res, null, 2);
+      await refreshEvents();
+    } catch (e) {
+      document.getElementById('uploadResult').textContent = 'Analyze error: ' + e.message;
+    }
+  }
+
+  // Refresh events from server and render notification cards
+  async function refreshEvents(){
+    try {
+      const r = await fetch(`${API_BASE}/events`);
+      const arr = await r.json();
+      renderNotifications(arr);
+      document.getElementById('eventsRaw').textContent = JSON.stringify(arr, null, 2);
+    } catch (e) {
+      document.getElementById('eventsRaw').textContent = 'Error loading events: ' + e.message;
+    }
+  }
+
+  // Render notification cards (newest first)
+  function renderNotifications(events){
+    const container = document.getElementById('notifications');
+    container.innerHTML = '';
+    if (!events || events.length === 0){
+      container.appendChild(el('div', {}, 'No events yet.'));
+      return;
+    }
+    // show latest 10, reversed
+    const latest = events.slice(-10).reverse();
+    latest.forEach(ev => {
+      const type = (ev.type||'info').toLowerCase();
+      const cls = {
+        fire: 'fire',
+        fall: 'fall',
+        visitor: 'visitor',
+        motion: 'motion',
+        camera: 'info',
+        system: 'info'
+      }[type] || 'info';
+
+      // choose emoji/icon
+      const ico = {
+        fire: '🔥',
+        fall: '⚠️',
+        visitor: '🚪',
+        motion: '💨',
+        camera: '📷',
+        system: 'ℹ️'
+      }[type] || '🔔';
+
+      // representative image URL if present (absolute path) -- try ev.representative_frame or /static/assets/<id>
+      let imgSrc = null;
+      if (ev.representative_frame) {
+        // representative_frame in our backend is /static/frames/{name}
+        imgSrc = `${API_BASE}${ev.representative_frame}`;
+      } else {
+        // try a sane mapping from type -> sample asset file
+        const sampleMap = {
+          fire: 'fire-at-kitchen.png',
+          fall: 'falldetected.png',
+          visitor: 'stranger.png',
+          motion: 'chaotic-motion-1.png',
+          camera: 'front_door.jpg'
+        };
+        imgSrc = `${API_BASE}/static/assets/${sampleMap[type] || 'front_door.jpg'}`;
+      }
+
+      const title = (ev.type||'Event').toUpperCase();
+      const message = ev.message || '';
+      const time = ev.timestamp || '';
+
+      const img = el('img', { src: imgSrc, alt: title });
+      const meta = el('div', { class: 'meta' }, [
+        el('h4', {}, `${ico} ${title}`),
+        el('p', {}, message),
+        el('div', { class: 'small' }, `Time: ${time}`),
+        el('div', { style: 'margin-top:6px' }, [
+          el('span', { class: 'chip' }, `Severity: ${ev.severity || 'n/a'}`),
+          el('span', { class: 'chip', style:'margin-left:8px' }, `Confidence: ${ev.confidence||''}`)
+        ])
+      ]);
+
+      const actions = el('div', { class: 'actions' }, []);
+      // confirm emergency button if requires_confirmation or severity critical/high
+      if (ev.requires_confirmation || (ev.severity && ['critical','high'].includes(ev.severity))) {
+        const btn = el('button', {}, 'Confirm Emergency');
+        btn.onclick = async () => {
+          btn.disabled = true; btn.innerText = 'Confirming...';
+          try {
+            const res = await fetch(`${API_BASE}/events/${ev.id}/confirm`, { method: 'POST' });
+            const j = await res.json();
+            btn.innerText = 'Confirmed';
+            await refreshEvents();
+          } catch (err) { btn.innerText = 'Error'; }
+        };
+        actions.appendChild(btn);
+      } else {
+        actions.appendChild(el('div', {}, ' '));
+      }
+
+      const note = el('div', { class: `note ${cls}` }, [ img, meta, actions ]);
+      container.appendChild(note);
+    });
+  }
+
+  // Auto-refresh on load
+  refreshEvents();
+
+  // Periodic auto-refresh (optional)
+  setInterval(refreshEvents, 45000); // every 45s
+</script>
+</body>
+</html>

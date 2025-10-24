@@ -1,0 +1,23 @@
+you can drop into your repo and run locally (or containerize). It provides:
+
+a FastAPI backend that accepts video uploads, extracts frames, runs lightweight analysis (face detection, simple fire/smoke color heuristic, motion/fall heuristics), creates event records and representative images, and exposes event endpoints;
+
+a simple single-file UI (playground.html) where you can upload each video one-by-one, press Analyze, and see results in the page (JSON + representative frame + notification log).
+
+instructions and 10 quick cURL commands to test.
+
+This is meant for a hackathon demo — detection is a mix of simple CV heuristics + filename fallback so it runs without heavy models. Replace the heuristics with Vertex Vision or YOLO in production.
+
+What you’ll get (files & purpose)
+
+backend/requirements.txt — Python deps
+
+backend/app/main.py — FastAPI app + endpoints
+
+backend/app/analysis.py — video frame extraction + detection heuristics
+
+backend/app/models.py — Pydantic models
+
+playground.html — single-file UI to upload + analyze + show results
+
+README snippet with run steps and curl examples (below)

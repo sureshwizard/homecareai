@@ -1,0 +1,12 @@
+# delete Cloud Run service
+gcloud run services delete homecareai-backend --region us-central1 --project angelic-pipe-475116-a1
+
+# delete storage buckets (and their contents)
+gsutil rm -r gs://homecareai-frontend-angelic-pipe-475116-a1
+gsutil rm -r gs://homecareai-media-angelic-pipe-475116-a1
+
+# remove service account (optional)
+gcloud iam service-accounts delete homecareai-sa@angelic-pipe-475116-a1.iam.gserviceaccount.com
+
+# disable APIs you enabled (optional)
+gcloud services disable run.googleapis.com aiplatform.googleapis.com storage.googleapis.com cloudbuild.googleapis.com
